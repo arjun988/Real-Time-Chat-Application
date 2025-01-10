@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { signup } from '../services/api';
 
 const Signup = () => {
-  const [formData, setFormData] = useState({ username: '', password: '' });
+  const [formData, setFormData] = useState({ username: '', email: '', password: '' });
   const [message, setMessage] = useState('');
 
   const handleChange = (e) => {
@@ -26,6 +26,14 @@ const Signup = () => {
         name="username"
         placeholder="Username"
         value={formData.username}
+        onChange={handleChange}
+        required
+      />
+      <input
+        type="email"
+        name="email"
+        placeholder="Email"
+        value={formData.email}
         onChange={handleChange}
         required
       />

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';  // Import useNavigate from react-router-dom
+import { useNavigate } from 'react-router-dom';  
 import { login } from '../services/api';
 
 const Login = ({ setToken }) => {
-  const [formData, setFormData] = useState({ username: '', password: '' });
+  const [formData, setFormData] = useState({ email: '', password: '' });  // Ensure 'email' is in the form data
   const [message, setMessage] = useState('');
-  const navigate = useNavigate();  // Initialize the navigate function
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -14,15 +14,13 @@ const Login = ({ setToken }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      console.log("Logging in with:", formData);  // Log form data to ensure email is included
       const response = await login(formData);
       setToken(response.data.token);  // Set the token after login
       setMessage('Login successful!');
-      
-      // Logic to redirect the user
-      // Here you can choose between "usersearch" or "chat" based on your app's flow
-      // Example: Navigate to the 'usersearch' screen after login:
-      navigate('/chat');  // Or `/chat` if you want to redirect to chat page directly
+      navigate('/chat');
     } catch (error) {
+      console.log(error);  // Log the error for more details
       setMessage('Error: ' + error.response.data.error);
     }
   };
@@ -30,10 +28,10 @@ const Login = ({ setToken }) => {
   return (
     <form onSubmit={handleSubmit}>
       <input
-        type="text"
-        name="username"
-        placeholder="Username"
-        value={formData.username}
+        type="email"
+        name="email"  // Correct name attribute for email input
+        placeholder="Email"
+        value={formData.email}
         onChange={handleChange}
         required
       />
