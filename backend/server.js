@@ -7,7 +7,7 @@ require('dotenv').config();
 
 // Import Message model if it's defined elsewhere
 const Message = require('./models/Message');
-
+const User =require('./models/User');
 const app = express();
 const server = http.createServer(app);
 
@@ -44,22 +44,57 @@ const connectDB = async () => {
 connectDB();
 
 // Handle socket connection
+// In server.js, update the socket.io message handling:
+
+// In server.js, update the socket message handling:
+
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
-  // Handle sending messages
-  socket.on('send-message', async (data) => {
-    const { sender, receiver, text } = data;
-    const message = new Message({ sender, receiver, text });
-    await message.save();
-    io.to(receiver).emit('receive-message', message);
+  socket.on('join-room', (userId) => {
+    socket.join(userId);
+    console.log(`User ${userId} joined room ${userId}`);
   });
 
-  // Handle disconnection
+  socket.on('send-message', async (data) => {
+    const { sender, receiver, text } = data;
+    try {
+      // Don't process messages sent to self
+      if (sender === receiver) {
+        return;
+      }
+
+      // Create and save the message
+      const message = new Message({ sender, receiver, text });
+      await message.save();
+
+      // Lookup sender's username
+      const senderUser = await User.findById(sender);
+      
+      // Emit the message to the receiver's room
+      io.to(receiver).emit('receive-message', {
+        sender,
+        senderName: senderUser.username,
+        content: text,
+        timestamp: message.timestamp
+      });
+
+      // Also emit back to sender but with receiver's info for chat list update
+      const receiverUser = await User.findById(receiver);
+      io.to(sender).emit('message-sent', {
+        receiver,
+        receiverName: receiverUser.username,
+        content: text,
+        timestamp: message.timestamp
+      });
+    } catch (error) {
+      console.error('Error handling message:', error);
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
   });
 });
-
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
