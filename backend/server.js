@@ -47,15 +47,29 @@ connectDB();
 // In server.js, update the socket.io message handling:
 
 // In server.js, update the socket message handling:
-
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
+  // Handle user joining a room
   socket.on('join-room', (userId) => {
     socket.join(userId);
     console.log(`User ${userId} joined room ${userId}`);
   });
 
+  // Handle typing indicator
+  socket.on('typing', ({ sender, receiver }) => {
+    io.to(receiver).emit('user-typing', {
+      sender,
+    });
+  });
+
+  socket.on('stop-typing', ({ sender, receiver }) => {
+    io.to(receiver).emit('user-stop-typing', {
+      sender,
+    });
+  });
+
+  // Handle sending messages
   socket.on('send-message', async (data) => {
     const { sender, receiver, text } = data;
     try {
@@ -70,13 +84,13 @@ io.on('connection', (socket) => {
 
       // Lookup sender's username
       const senderUser = await User.findById(sender);
-      
+
       // Emit the message to the receiver's room
       io.to(receiver).emit('receive-message', {
         sender,
         senderName: senderUser.username,
         content: text,
-        timestamp: message.timestamp
+        timestamp: message.timestamp,
       });
 
       // Also emit back to sender but with receiver's info for chat list update
@@ -85,16 +99,18 @@ io.on('connection', (socket) => {
         receiver,
         receiverName: receiverUser.username,
         content: text,
-        timestamp: message.timestamp
+        timestamp: message.timestamp,
       });
     } catch (error) {
       console.error('Error handling message:', error);
     }
   });
 
+  // Handle user disconnection
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
   });
 });
+
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
